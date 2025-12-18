@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>ToDo List (Frontend + Backend)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 450px;
+            margin: auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        .add-btn {
+            background: #3498db;
+            color: #fff;
+            margin-left: 5px;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        li.completed span {
+            text-decoration: line-through;
+            color: gray;
+        }
+        .delete {
+            background: #e74c3c;
+            color: #fff;
+        }
+        .task-text {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ToDo List</h1>
+
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Введіть нове завдання">
+        <button class="add-btn" onclick="addTask()">Додати</button>
+    </div>
+
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+    let tasks = [];
+
+    async function loadTasks() {
+        const response = await fetch('/tasks');
+        tasks = await response.json();
+        renderTasks();
+    }
+
+    async function addTask() {
+        const input = document.getElementById('taskInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        await fetch('/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, completed: false })
+        });
+
+        input.value = '';
+        loadTasks();
+    }
+
+    async function toggleTask(index) {
+        tasks[index].completed = !tasks[index].completed;
+
+        await fetch(`/tasks/${index}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(tasks[index])
+        });
+
+        loadTasks();
+    }
+
+    async function deleteTask(index) {
+        await fetch(`/tasks/${index}`, {
+            method: 'DELETE'
+        });
+
+        loadTasks();
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+
+        tasks.forEach((task, index) => {
+            const li = document.createElement('li');
+            if (task.completed) li.classList.add('completed');
+
+            const span = document.createElement('span');
+            span.textContent = task.text;
+            span.className = 'task-text';
+            span.onclick = () => toggleTask(index);
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '✖';
+            delBtn.className = 'delete';
+            delBtn.onclick = () => deleteTask(index);
+
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            list.appendChild(li);
+        });
+    }
+
+    loadTasks();
+</script>
+
+</body>
+</html>
